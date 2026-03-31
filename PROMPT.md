@@ -1,25 +1,11 @@
-# Inspector Ralph: Spec-Driven Development Pipeline
-
-Paste this into Claude Code to have it set up the full workflow in your current repo.
-
----
-
-## What This Is
-
-A two-loop autonomous development pipeline that takes raw requirements, builds a dependency-ordered plan, implements features one at a time via ralph loops, and continuously QA's the result against the specs.
-
-There are two ralph loops running in parallel:
+Set up a two-loop autonomous development pipeline in this repo. There are two ralph loops running in parallel:
 
 - **Builder Ralph** — implements features in dependency order, PRs each into main, waits for CI, merges, exits. The next iteration picks up the next feature from a known-green main.
 - **Inspector Ralph** — watches main for new merges, deploys locally, does exploratory testing against the specs, and writes defect specs for any gaps it finds.
 
 Defects take priority: when builder ralph wakes up, it checks `defects/prd.json` first. If there's an unfinished defect story, it fixes that before picking up the next planned feature.
 
----
-
-## Setup Instructions
-
-Please set up the following workflow in this repo. Read all of these instructions before starting, then work through them step by step.
+Read all of the following instructions before starting, then work through them step by step.
 
 ### 1. Initialize SpecKit
 
@@ -267,84 +253,3 @@ A prompt file that drives the initial requirements-to-specs phase (run interacti
 11. Report that the project is ready for ralph.
 ```
 
-### 14. Add a top-level `README.md` section or `USAGE.md`
-
-Explain how to run the pipeline:
-
-```
-## Running the Pipeline
-
-### Phase 1: Bootstrap (interactive)
-Place your raw requirements in `requirements/`, then:
-    claude < scripts/bootstrap.md
-
-Review the build order when prompted. Review and approve specs.
-
-### Phase 2: Build + Inspect (autonomous)
-In one terminal:
-    scripts/ralph/ralph.sh --tool claude 50
-
-In a second terminal:
-    scripts/inspector/inspector.sh --tool claude 100
-
-Builder implements features in DAG order, PRs each into main.
-Inspector tests merged features against specs, files defects.
-Builder prioritizes defects over new features.
-
-### Phase 3: Review
-When both loops exit, review:
-- `scripts/ralph/progress.txt` — what was built
-- `scripts/inspector/inspection_log.txt` — what was tested
-- `defects/prd.json` — any remaining open defects
-- PR history on main — full audit trail
-```
-
----
-
-## Summary of the Architecture
-
-```
- Raw Requirements
-       |
-  [You + Claude — interactive bootstrap]
-       |
-  requirements/features.json
-       |
-  [NetworkX — dag_sort.py]
-       |
-  requirements/build_order.json
-       |
-  [generate_prd.py]
-       |
-  scripts/ralph/prd.json
-       |
-       +---------------------------+
-       |                           |
-  Builder Ralph              Inspector Ralph
-  (scripts/ralph/)           (scripts/inspector/)
-       |                           |
-  Implements features        Watches main
-  in DAG order               Deploys locally
-       |                     Tests against specs
-  PR → CI → Merge                 |
-       |                     Finds gaps
-  main moves forward              |
-       |                     Writes defect specs
-       +<--- defects/prd.json <---+
-       |
-  Builder checks defects
-  first on each wakeup
-       |
-  Fixes defect before
-  next planned feature
-       |
-       +---------------------------+
-       |                           |
-  All features built         All features inspected
-  All defects fixed          Gaps documented
-       |                           |
-       +---------------------------+
-                   |
-              Done. Green main.
-              Full PR audit trail.
-```
