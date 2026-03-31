@@ -18,6 +18,8 @@ prompts/
   INSPECTOR_RALPH.md    # The prompt that drives each inspector iteration
 
 scripts/
+  builder-ralph.sh      # Run the builder loop
+  inspector-ralph.sh    # Run the inspector loop
   ralph.sh              # Generic ralph loop — runs any prompt in a retry loop
 ```
 
@@ -49,13 +51,13 @@ Copy `scripts/ralph.sh` into your target repo, then run both loops:
 In one terminal (builder):
 
 ```bash
-scripts/ralph.sh --prompt scripts/ralph/CLAUDE.md --tool claude 50
+scripts/builder-ralph.sh 50
 ```
 
 In a second terminal (inspector):
 
 ```bash
-scripts/ralph.sh --prompt scripts/inspector/CLAUDE.md --tool claude 100
+scripts/inspector-ralph.sh 100
 ```
 
 Builder implements features in DAG order, PRs each into main, waits for CI, merges. Inspector tests merged features against specs, files defects. Builder prioritizes defects over new features.
