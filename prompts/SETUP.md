@@ -62,7 +62,7 @@ scripts/ralph/
 
 scripts/inspector/
   CLAUDE.md
-  last_inspected.json
+  signoff.json
   inspection_log.txt
 ```
 
@@ -70,11 +70,11 @@ scripts/inspector/
 
 ### 8. Copy the Inspector Ralph prompt into `scripts/inspector/CLAUDE.md`
 
-### 9. Initialize `scripts/inspector/last_inspected.json`
+### 9. Initialize `scripts/inspector/signoff.json`
 
 ```json
 {
-  "inspected_features": []
+  "features": {}
 }
 ```
 
