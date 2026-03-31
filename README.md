@@ -9,6 +9,18 @@ Two ralph loops run in parallel:
 
 Defects take priority: when builder ralph wakes up, it checks `defects/prd.json` first. If there's an unfinished defect story, it fixes that before picking up the next planned feature.
 
+## Repo Contents
+
+```
+prompts/
+  SETUP.md              # Paste into Claude Code to scaffold the pipeline + ingest requirements
+  BUILDER_RALPH.md      # The prompt that drives each builder iteration
+  INSPECTOR_RALPH.md    # The prompt that drives each inspector iteration
+
+scripts/
+  ralph.sh              # Generic ralph loop — runs any prompt in a retry loop
+```
+
 ## Dependencies
 
 - [Claude Code](https://claude.com/claude-code)
@@ -19,37 +31,36 @@ Defects take priority: when builder ralph wakes up, it checks `defects/prd.json`
 
 ## Usage
 
-### Step 1: Set up the pipeline
+### Step 1: Set up the pipeline + ingest requirements
 
-Copy the contents of `PROMPT.md` and paste it into Claude Code in your target repo. Claude will scaffold all the scripts, directories, and config files.
+Place your raw requirements (PDFs, diagrams, markdown, images, etc.) in `requirements/` in your target repo. Then copy the contents of `prompts/SETUP.md` and paste it into Claude Code.
 
-### Step 2: Bootstrap (interactive)
+Claude will:
+1. Scaffold all scripts, directories, and config files
+2. Study your requirements and ask clarifying questions
+3. Extract features and dependencies, build a DAG using NetworkX
+4. Generate SpecKit specs in dependency order
+5. Generate the `prd.json` story queue for builder ralph
 
-Place your raw requirements (PDFs, diagrams, markdown, images, etc.) in `requirements/`, then:
+### Step 2: Build + Inspect (autonomous)
+
+Copy `scripts/ralph.sh` into your target repo, then run both loops:
+
+In one terminal (builder):
 
 ```bash
-claude < scripts/bootstrap.md
+scripts/ralph.sh --prompt scripts/ralph/CLAUDE.md --tool claude 50
 ```
 
-Claude will study the requirements, ask you clarifying questions, extract features and dependencies, build a DAG using NetworkX, and generate SpecKit specs in dependency order. Review the build order and specs when prompted.
-
-### Step 3: Build + Inspect (autonomous)
-
-In one terminal:
+In a second terminal (inspector):
 
 ```bash
-scripts/ralph/ralph.sh --tool claude 50
-```
-
-In a second terminal:
-
-```bash
-scripts/inspector/inspector.sh --tool claude 100
+scripts/ralph.sh --prompt scripts/inspector/CLAUDE.md --tool claude 100
 ```
 
 Builder implements features in DAG order, PRs each into main, waits for CI, merges. Inspector tests merged features against specs, files defects. Builder prioritizes defects over new features.
 
-### Step 4: Review
+### Step 3: Review
 
 When both loops exit, review:
 
@@ -63,7 +74,7 @@ When both loops exit, review:
 ```
  Raw Requirements
        |
-  [You + Claude — interactive bootstrap]
+  [You + Claude — interactive setup]
        |
   requirements/features.json
        |
