@@ -46,13 +46,20 @@ Split pages show dependency chains for progressive enhancement:
 - `P4a` — "Basic tutor form" (core functionality)
 - `P4b` — "Tutor form with subscription panel" (enhanced, depends on P4a + Subscription slice)
 
-### 5. Incremental API client generation
+### 5. Mandatory E→K→P chain
 
-When using a code-generation tool (Kiota, NSwag, openapi-generator), model it as explicit nodes after each endpoint group — not batched at the end. Each Kiota node depends on the endpoints it regenerates from, and the frontend nodes that consume the generated client depend on the Kiota node.
+Every backend endpoint node (E) MUST be followed by an API client generation node (K), which MUST be followed by a frontend page node (P). This is a hard constraint — no endpoint exists without a corresponding Kiota regen, and no frontend page consumes an API without going through a generated client.
 
 ```
 E2[Lesson endpoints] --> K2[Kiota regen] --> P2[Lesson page]
 ```
+
+**Violations (never do this):**
+- `E2 --> P2` — frontend must never depend directly on an endpoint; always go through Kiota
+- `E2 --> K2` with no `P` node after `K2` — every Kiota regen must feed at least one frontend node
+- `K2 --> P2` with no `E` node before `K2` — every Kiota regen must be triggered by endpoint(s)
+
+When using a code-generation tool (Kiota, NSwag, openapi-generator), model it as explicit nodes after each endpoint group — not batched at the end. Each Kiota node depends on the endpoints it regenerates from, and the frontend nodes that consume the generated client depend on the Kiota node.
 
 ### 6. E2E tests inline per slice
 
@@ -163,11 +170,13 @@ Every DAG must pass these checks before being presented to the user:
 
 1. **Acyclicity** — `nx.is_directed_acyclic_graph(G)` must return `True`. If cycles exist, print them with `nx.find_cycle(G)` and fix before proceeding.
 
-2. **Topological sort** — `list(nx.topological_sort(G))` produces the build order. Present this as the implementation sequence.
+2. **E→K→P chain integrity** — Every endpoint node (E prefix) must have at least one outgoing edge to a Kiota node (K prefix). Every Kiota node must have at least one incoming edge from an endpoint node and at least one outgoing edge to a frontend page node (P prefix). Every frontend page node must have at least one incoming edge from a Kiota node. No direct E→P edges are allowed. Flag violations as errors.
 
-3. **Critical path** — `nx.dag_longest_path(G)` with uniform edge weights of 1. This is the longest chain of sequential dependencies and represents the minimum number of sequential steps to complete the project.
+3. **Topological sort** — `list(nx.topological_sort(G))` produces the build order. Present this as the implementation sequence.
 
-4. **Parallelism levels** — `list(nx.topological_generations(G))` shows which nodes can execute concurrently at each level. The widest generation indicates maximum parallelism.
+4. **Critical path** — `nx.dag_longest_path(G)` with uniform edge weights of 1. This is the longest chain of sequential dependencies and represents the minimum number of sequential steps to complete the project.
+
+5. **Parallelism levels** — `list(nx.topological_generations(G))` shows which nodes can execute concurrently at each level. The widest generation indicates maximum parallelism.
 
 ### Summary Statistics
 
